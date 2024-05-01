@@ -8,10 +8,12 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'tg_user_id',
+            'telegram_id',
             'username',
             'first_name',
             'last_name',
             'phone_number',
+            'birth_date',
             'lang'
         ]
+
