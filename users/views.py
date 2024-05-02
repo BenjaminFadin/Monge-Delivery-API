@@ -24,3 +24,4 @@ class UserViewSet(ModelViewSet):
         self.check_object_permissions(self.request, obj)
 
         return obj
+1

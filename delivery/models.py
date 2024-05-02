@@ -1,12 +1,13 @@
 from django.db import models
 from django.core.validators import MinValueValidator
-from uuid import uuid4
+from mptt.models import MPTTModel, TreeForeignKey
+
 
 from shared.models import BaseModel
 
 
-class Category(BaseModel):
-    parent = models.ForeignKey('self', on_delete=models.CASCADE, related_name='children')
+class Category(BaseModel, MPTTModel):
+    parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
     title = models.CharField(max_length=50)
 
     class Meta:
@@ -49,15 +50,33 @@ class Order(BaseModel):
     # related name bilan order.items
 
 
+
+
+class Cart(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid4)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")  # rather thans cartitem_set
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1)]
+    )
+
+    class Meta:
+        unique_together = [['cart', 'product']]
+
+
 class OrderItem(BaseModel):
     order = models.ForeignKey(Order, on_delete=models.PROTECT, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name='orderitems')
     quantity = models.PositiveSmallIntegerField()
-    unit_price = models.CharField(max_length=20)
+    unit_price = models.CharField(max_length=30)
 
 
 class Address(BaseModel):
+    title = models.CharField(max_length=200)
     location = models.CharField(max_length=200)
     customer = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
-
 
