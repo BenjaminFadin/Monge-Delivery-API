@@ -1,7 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from mptt.models import MPTTModel, TreeForeignKey
-
+from uuid import uuid4
 
 from shared.models import BaseModel
 
@@ -50,6 +50,13 @@ class Order(BaseModel):
     # related name bilan order.items
 
 
+class OrderItem(BaseModel):
+    order = models.ForeignKey(Order, on_delete=models.PROTECT, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name='orderitems')
+    quantity = models.PositiveSmallIntegerField()
+    unit_price = models.CharField(max_length=30)
+
+
 
 
 class Cart(models.Model):
@@ -68,11 +75,6 @@ class CartItem(models.Model):
         unique_together = [['cart', 'product']]
 
 
-class OrderItem(BaseModel):
-    order = models.ForeignKey(Order, on_delete=models.PROTECT, related_name='items')
-    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name='orderitems')
-    quantity = models.PositiveSmallIntegerField()
-    unit_price = models.CharField(max_length=30)
 
 
 class Address(BaseModel):
