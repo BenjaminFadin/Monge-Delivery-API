@@ -3,11 +3,25 @@ from django.core.validators import MinValueValidator
 from mptt.models import MPTTModel, TreeForeignKey
 from uuid import uuid4
 
+
 from shared.models import BaseModel
 
 
+class Promotion(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    title = models.CharField(max_length=200)
+    content = models.CharField(max_length=200)
+    picture = models.ImageField(upload_to='promotion_images/', null=True, blank=True)
+    video = models.FileField(upload_to='promotion_videos/', null=True, blank=True)
+    is_sent = models.BooleanField(default=False)
+    
+    def __str__(self):
+        return self.title
+    
+
 class Category(BaseModel, MPTTModel):
     parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+    logo = models.ImageField(upload_to='logos/', null=True, blank=True)
     title = models.CharField(max_length=50)
 
     class Meta:
@@ -20,6 +34,7 @@ class Category(BaseModel, MPTTModel):
 
 class Product(BaseModel):
     title = models.CharField(max_length=255)
+    image = models.ImageField(upload_to='product_images/')
     unit_price = models.CharField(max_length=15)
     inventory = models.IntegerField(default=1)
     category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name='products')
@@ -64,13 +79,15 @@ class Cart(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
+
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")  # rather thans cartitem_set
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1)]
     )
-
+    
+    
     class Meta:
         unique_together = [['cart', 'product']]
 
@@ -81,4 +98,12 @@ class Address(BaseModel):
     title = models.CharField(max_length=200)
     location = models.CharField(max_length=200)
     customer = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
+
+class Comment(models.Model):
+    author = models.ForeignKey('users.User', on_delete=models.PROTECT, related_name='comment')
+    rating_star = models.IntegerField(default=0)
+    content = models.TextField()
+    
+    def __str__(self):
+        return f"{self.author}'s comment"
 

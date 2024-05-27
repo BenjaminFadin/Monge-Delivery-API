@@ -131,10 +131,8 @@ class UpdateCartItemSerializer(serializers.ModelSerializer):
 
 class CreateOrderSerializer(serializers.Serializer):
     cart_id = serializers.UUIDField()
-
+    
     def save(self, **kwargs):
-        # print(self.validated_data['cart_id'])
-        # print(self.context['user_id'])
         with transaction.atomic():
             cart_id = self.validated_data['cart_id']
 

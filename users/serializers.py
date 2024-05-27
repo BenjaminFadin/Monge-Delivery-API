@@ -14,6 +14,6 @@ class UserSerializer(serializers.ModelSerializer):
             'last_name',
             'phone_number',
             'birth_date',
-            'lang'
+            'language'
         ]
-
+        
