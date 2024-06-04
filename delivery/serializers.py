@@ -154,4 +154,3 @@ class CreateOrderSerializer(serializers.Serializer):
 
             Cart.objects.delete(pk=cart_id).delete()
 
-
