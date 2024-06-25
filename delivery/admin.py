@@ -11,3 +11,5 @@ admin.site.register(Address)
 admin.site.register(Promotion)
 admin.site.register(Comment)
 
+admin.site.register(Cart)
+admin.site.register(CartItem)

@@ -2,6 +2,8 @@ from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.response import Response
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, RetrieveModelMixin, UpdateModelMixin
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
 from .models import *
 from .serializers import (
     CategorySerializer, 
@@ -34,6 +36,8 @@ class CategoryViewSet(ModelViewSet):
 class ProductViewSet(ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    search_fields = ['title']
 
 
 class OrderViewSet(ModelViewSet):
@@ -56,7 +60,7 @@ class CartViewSet(CreateModelMixin,
 
 
 
-class CartItemViewSet(ModelViewSet):
+class CartItemViewSet(ModelViewSet):    
     http_method_names = ['get', 'post', 'patch', 'delete']  # katta harf bilan yozsa ishlamaydi
 
     def get_serializer_class(self):
@@ -67,13 +71,14 @@ class CartItemViewSet(ModelViewSet):
         return CartItemSerializer
 
     def get_serializer_context(self):
-        return {'cart_id': self.kwargs['cart_pk']}
+        return {'cart_id': self.kwargs.get('cart_pk')}
 
     def get_queryset(self):
         return CartItem.objects \
-            .filter(cart_id=self.kwargs['cart_pk']) \
+            .filter(cart_id=self.kwargs.get('cart_pk')) \
             .select_related('product')
 
 
 
 
+    

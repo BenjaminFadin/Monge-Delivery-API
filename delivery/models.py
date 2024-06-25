@@ -34,7 +34,7 @@ class Category(BaseModel, MPTTModel):
 class Product(BaseModel):
     title = models.CharField(max_length=255)
     image = models.ImageField(upload_to='product_images/')
-    unit_price = models.CharField(max_length=15)
+    unit_price = models.FloatField()
     inventory = models.IntegerField(default=1)
     category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name='products')
     discount = models.IntegerField(default=0)
@@ -100,3 +100,4 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"{self.author}'s comment"
+

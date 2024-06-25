@@ -18,7 +18,7 @@ class CategorySerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Category
-        fields = ['id', 'parent', 'title']
+        fields = ['id', 'parent', 'title', 'logo']
 
 class ProductSerializer(serializers.ModelSerializer):
     
@@ -26,7 +26,8 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 
-            'title', 
+            'title',
+            'image',
             'unit_price', 
             'inventory', 
             'discount', 
@@ -58,7 +59,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class CartItemSerializer(serializers.ModelSerializer):
-    product = SimpleProductSerializer()
+    product = SimpleProductSerializer(read_only=True)
     total_price = serializers.SerializerMethodField()
 
     def get_total_price(self, cart_item: CartItem):
@@ -123,7 +124,7 @@ class AddCartItemSerializer(serializers.ModelSerializer):
 
 class UpdateCartItemSerializer(serializers.ModelSerializer):
     class Meta:
-        model = CartItem
+        model = CartItem    
         fields = ['quantity']
 
 
