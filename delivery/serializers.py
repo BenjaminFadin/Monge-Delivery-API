@@ -83,13 +83,14 @@ class CartSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
     items = CartItemSerializer(many=True, read_only=True)
     total_price = serializers.SerializerMethodField()
-
+    user = serializers.StringRelatedField(read_only=True)
+    
     def get_total_price(self, cart):
         return sum([item.quantity * item.product.unit_price for item in cart.items.all()])
 
     class Meta:
         model = Cart
-        fields = ['id', 'items', 'total_price']
+        fields = ['id', 'user', 'items', 'total_price']
 
 
 class AddCartItemSerializer(serializers.ModelSerializer):
@@ -136,13 +137,13 @@ class CreateOrderSerializer(serializers.Serializer):
     def save(self, **kwargs):
         with transaction.atomic():
             cart_id = self.validated_data['cart_id']
-
-            (customer, created) = User.objects.get_or_create(user_id=self.context['user_id'])
+            user_id = self.context['user_id']
+            (customer, created) = User.objects.get_or_create(user_id=user_id)
             order = Order.objects.create(customer=customer)
 
             cart_items = CartItem.objects \
                 .select_related('product') \
-                .filter(cart_id=self.validated_data['cart_id'])
+                .filter(cart_id=cart_id)
             order_items = [
                 OrderItem(
                     order=order,
@@ -151,7 +152,8 @@ class CreateOrderSerializer(serializers.Serializer):
                     quantity=item.quantity
                 ) for item in cart_items
             ]
+
             OrderItem.objects.bulk_create(order_items)
 
-            Cart.objects.delete(pk=cart_id).delete()
-
+            Cart.objects.filter(pk=cart_id).delete()
+            return order

@@ -74,15 +74,18 @@ class OrderItem(BaseModel):
 class Cart(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='carts')
 
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")  # rather thans cartitem_set
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveSmallIntegerField(
-        validators=[MinValueValidator(1)]
+        validators=[MinValueValidator(1)], default=1
     )
 
+    def __str__(self):
+        return self.product.title
+    
     class Meta:
         unique_together = [['cart', 'product']]
 
