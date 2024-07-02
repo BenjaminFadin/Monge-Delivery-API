@@ -43,7 +43,7 @@ class ProductViewSet(ModelViewSet):
 class OrderViewSet(ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-
+    # lookup_field = 'customer__id'
 
 class OrderItemViewSet(ModelViewSet):
     queryset = OrderItem.objects.all()

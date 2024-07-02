@@ -59,7 +59,7 @@ class Order(BaseModel):
     placed_at = models.DateTimeField(auto_now_add=True)
     payment_status = models.CharField(
         max_length=1, choices=PAYMENT_STATUS_CHOICES, default=PAYMENT_STATUS_PENDING)
-    customer = models.ForeignKey('users.User', on_delete=models.PROTECT)
+    customer = models.ForeignKey('users.User', on_delete=models.PROTECT, related_name='orders')
     # ichidan reverse related objectni chaqirish uchun bu yerda order.orderitem_set.quantity deb olinadi.
     # related name bilan order.items
 
@@ -103,4 +103,5 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"{self.author}'s comment"
+
 
