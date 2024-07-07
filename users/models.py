@@ -29,5 +29,5 @@ class User(models.Model):
         verbose_name_plural = 'User'
 
     def __str__(self):
-        user_info = f"ID: {self.telegram_id}, {self.username}"
-        return user_info
+        # user_info = f"ID: {self.telegram_id}, {self.username}"
+        return str(self.telegram_id)

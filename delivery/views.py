@@ -5,9 +5,11 @@ from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, RetrieveM
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
 from .models import *
+from users.models import User
 from .serializers import (
     CategorySerializer, 
-    ProductSerializer, 
+    ProductSerializer,
+    PromotionSerializer, 
     OrderSerializer, 
     OrderItemSerializer,
     CartSerializer,
@@ -40,6 +42,10 @@ class ProductViewSet(ModelViewSet):
     search_fields = ['title']
 
 
+class PromotionViewSet(ModelViewSet):
+    queryset = Promotion.objects.all()
+    serializer_class = PromotionSerializer
+
 class OrderViewSet(ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
@@ -57,6 +63,11 @@ class CartViewSet(CreateModelMixin,
                   GenericViewSet):
     queryset = Cart.objects.prefetch_related('items__product').all()
     serializer_class = CartSerializer 
+
+    def perform_create(self, serializer):
+        telegram_id = serializer.validated_data.pop('telegram_id')
+        user = User.objects.get(telegram_id=telegram_id)
+        serializer.save(user=user)
 
 
 

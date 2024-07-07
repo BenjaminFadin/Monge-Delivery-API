@@ -9,7 +9,7 @@ from shared.models import BaseModel
 class Promotion(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     title = models.CharField(max_length=200)
-    content = models.CharField(max_length=200)
+    content = models.TextField()
     picture = models.ImageField(upload_to='promotion_images/', null=True, blank=True)
     video = models.FileField(upload_to='promotion_videos/', null=True, blank=True)
     is_sent = models.BooleanField(default=False)
@@ -45,23 +45,28 @@ class Product(BaseModel):
 
     class Meta:
         ordering = ('title',)
-
+ 
 
 class Order(BaseModel):
     PAYMENT_STATUS_PENDING = "P"
+    PAYMENT_STATUS_OUT_FOR_DELIVERY = 'O'    
     PAYMENT_STATUS_COMPLETE = "C"
     PAYMENT_STATUS_FAILED = "F"
     PAYMENT_STATUS_CHOICES = [
         (PAYMENT_STATUS_PENDING, "Pending"),
+        (PAYMENT_STATUS_OUT_FOR_DELIVERY, 'Out for delivery'),
         (PAYMENT_STATUS_COMPLETE, "Complete"),
         (PAYMENT_STATUS_FAILED, "Failed"),
     ]
+    
     placed_at = models.DateTimeField(auto_now_add=True)
     payment_status = models.CharField(
         max_length=1, choices=PAYMENT_STATUS_CHOICES, default=PAYMENT_STATUS_PENDING)
-    customer = models.ForeignKey('users.User', on_delete=models.PROTECT, related_name='orders')
-    # ichidan reverse related objectni chaqirish uchun bu yerda order.orderitem_set.quantity deb olinadi.
-    # related name bilan order.items
+    courier = models.ForeignKey('users.User', on_delete=models.PROTECT, related_name='courier_orders', limit_choices_to={'is_courier': True}, null=True, blank=True)
+    recipient = models.ForeignKey('users.User', on_delete=models.PROTECT, related_name='recipient_orders', limit_choices_to={'is_courier': False}, null=True, blank=True)
+
+    def __str__(self):
+        return f"Order #{self.id} - {self.get_payment_status_display()}"
 
 
 class OrderItem(BaseModel):
@@ -92,7 +97,8 @@ class CartItem(models.Model):
 
 class Address(BaseModel):
     title = models.CharField(max_length=200)
-    location = models.CharField(max_length=200)
+    pickup_location = models.CharField(max_length=255)
+    delivery_location = models.CharField(max_length=255)
     customer = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
 
 

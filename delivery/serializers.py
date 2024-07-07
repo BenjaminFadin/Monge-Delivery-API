@@ -5,6 +5,7 @@ from rest_framework import serializers
 from users.models import User
 
 from delivery.models import (
+    Promotion,
     Cart,
     CartItem,
     Category, 
@@ -13,6 +14,7 @@ from delivery.models import (
     OrderItem, 
     Address
 )
+from users.serializers import SimpleUserSerializer
 
 class CategorySerializer(serializers.ModelSerializer):
     
@@ -20,8 +22,9 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = ['id', 'parent', 'title', 'logo']
 
+
 class ProductSerializer(serializers.ModelSerializer):
-    
+
     class Meta:
         model = Product
         fields = [
@@ -35,11 +38,17 @@ class ProductSerializer(serializers.ModelSerializer):
             'category'
         ]
 
+class PromotionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Promotion
+        fields = ['created_at', 'title', 'content', 'picture', 'video', 'is_sent']
+
 class OrderItemSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = OrderItem
         fields = ['id', 'order', 'product', 'quantity', 'unit_price']
+
 
 class SimpleProductSerializer(serializers.ModelSerializer):
     class Meta:
@@ -47,14 +56,13 @@ class SimpleProductSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'unit_price']
 
 
-
-
 class OrderSerializer(serializers.ModelSerializer):
+    recipient = SimpleUserSerializer()
     items = OrderItemSerializer(many=True)
 
     class Meta:
         model = Order
-        fields = ['id', 'placed_at', 'payment_status', 'customer', 'items']
+        fields = ['id', 'placed_at', 'payment_status', 'recipient', 'items']
 
 
 
@@ -83,14 +91,14 @@ class CartSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
     items = CartItemSerializer(many=True, read_only=True)
     total_price = serializers.SerializerMethodField()
-    user = serializers.StringRelatedField(read_only=True)
-    
+    telegram_id = serializers.CharField(write_only=True)
+
     def get_total_price(self, cart):
         return sum([item.quantity * item.product.unit_price for item in cart.items.all()])
 
     class Meta:
         model = Cart
-        fields = ['id', 'user', 'items', 'total_price']
+        fields = ['id', 'telegram_id', 'items', 'total_price']
 
 
 class AddCartItemSerializer(serializers.ModelSerializer):
@@ -127,8 +135,6 @@ class UpdateCartItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CartItem    
         fields = ['quantity']
-
-
 
 
 class CreateOrderSerializer(serializers.Serializer):

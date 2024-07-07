@@ -26,4 +26,3 @@ sqlparse==0.4.2
 typing_extensions==4.1.1
 uritemplate==4.1.1
 urllib3==2.2.1
-django_ckeditor==6.7.1
