@@ -12,7 +12,7 @@ class User(models.Model):
         (RU, 'ru'),
         (EN, 'en')
     )
-
+    
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     modified_at = models.DateTimeField(auto_now=True, null=True)
     telegram_id = models.IntegerField(unique=True)

@@ -19,8 +19,27 @@ class Promotion(models.Model):
 
 
 class Category(BaseModel, MPTTModel):
+    """
+    retrieve:
+    Return the given model instance.
+
+    list:
+    Return a list of all the existing model instances.
+
+    create:
+    Create a new model instance.
+
+    update:
+    Update an existing model instance.
+
+    partial_update:
+    Partially update an existing model instance.
+
+    destroy:
+    Delete an existing model instance.
+    """
     parent = TreeForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
-    logo = models.ImageField(upload_to='logos/', null=True, blank=True)
+    logo = models.FileField(upload_to='logos/', null=True, blank=True)
     title = models.CharField(max_length=50)
 
     class Meta:
@@ -45,7 +64,7 @@ class Product(BaseModel):
 
     class Meta:
         ordering = ('title',)
- 
+
 
 class Order(BaseModel):
     PAYMENT_STATUS_PENDING = "P"
@@ -58,7 +77,7 @@ class Order(BaseModel):
         (PAYMENT_STATUS_COMPLETE, "Complete"),
         (PAYMENT_STATUS_FAILED, "Failed"),
     ]
-    
+
     placed_at = models.DateTimeField(auto_now_add=True)
     payment_status = models.CharField(
         max_length=1, choices=PAYMENT_STATUS_CHOICES, default=PAYMENT_STATUS_PENDING)

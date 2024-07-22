@@ -4,6 +4,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, RetrieveModelMixin, UpdateModelMixin
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
+from rest_framework.decorators import action
 from .models import *
 from users.models import User
 from .serializers import (
@@ -18,22 +19,27 @@ from .serializers import (
     CartItemSerializer
 )
 
-
-class CategoryViewSet(ModelViewSet):
-    queryset = Category.objects.all()
+class CategoryParentViewSet(ModelViewSet):
+    queryset = Category.objects.filter(parent__isnull=True)
     serializer_class = CategorySerializer
 
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
+class SubCategoryViewSet(ModelViewSet):
+    serializer_class = CategorySerializer
+        
+    def get_queryset(self):
+        parent_id = self.request.query_params.get('parent_id')
+        if parent_id:
+            return Category.objects.filter(parent__id=parent_id)
+        return Category.objects.none()  # Return an empty queryset if no parent_id is provided
+
+    @action(detail=False, methods=['get'])
+    def list_subcategories(self, request, *args, **kwargs):
         parent_id = request.query_params.get('parent_id')
-        if parent_id is not None:
-            if parent_id.lower() == 'none':
-                queryset = queryset.filter(parent__isnull=True)
-            else:
-                queryset = queryset.filter(parent_id=parent_id)
+        if not parent_id:
+            return Response({"detail": "parent_id query parameter is required."}, status=400)
+        queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-
 
 class ProductViewSet(ModelViewSet):
     queryset = Product.objects.all()
@@ -91,5 +97,3 @@ class CartItemViewSet(ModelViewSet):
 
 
 
-
-    
