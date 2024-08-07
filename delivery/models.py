@@ -2,7 +2,6 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from mptt.models import MPTTModel, TreeForeignKey
 from uuid import uuid4
-
 from shared.models import BaseModel
 
 
@@ -67,22 +66,23 @@ class Product(BaseModel):
 
 
 class Order(BaseModel):
-    PAYMENT_STATUS_PENDING = "P"
-    PAYMENT_STATUS_OUT_FOR_DELIVERY = 'O'    
-    PAYMENT_STATUS_COMPLETE = "C"
-    PAYMENT_STATUS_FAILED = "F"
+    PAYMENT_STATUS_PENDING = "В ожидании"
+    PAYMENT_STATUS_OUT_FOR_DELIVERY = 'На доставке'
+    PAYMENT_STATUS_COMPLETE = "Успешно доставлен"
+    PAYMENT_STATUS_FAILED = "Отменено"
     PAYMENT_STATUS_CHOICES = [
-        (PAYMENT_STATUS_PENDING, "Pending"),
-        (PAYMENT_STATUS_OUT_FOR_DELIVERY, 'Out for delivery'),
-        (PAYMENT_STATUS_COMPLETE, "Complete"),
-        (PAYMENT_STATUS_FAILED, "Failed"),
+        (PAYMENT_STATUS_PENDING, "В ожидании"),
+        (PAYMENT_STATUS_OUT_FOR_DELIVERY, 'На доставке'),
+        (PAYMENT_STATUS_COMPLETE, "Успешно доставлен"),
+        (PAYMENT_STATUS_FAILED, "Отменено"),
     ]
 
     placed_at = models.DateTimeField(auto_now_add=True)
     payment_status = models.CharField(
-        max_length=1, choices=PAYMENT_STATUS_CHOICES, default=PAYMENT_STATUS_PENDING)
+        max_length=100, choices=PAYMENT_STATUS_CHOICES, default=PAYMENT_STATUS_PENDING)
     courier = models.ForeignKey('users.User', on_delete=models.PROTECT, related_name='courier_orders', limit_choices_to={'is_courier': True}, null=True, blank=True)
     recipient = models.ForeignKey('users.User', on_delete=models.PROTECT, related_name='recipient_orders', limit_choices_to={'is_courier': False}, null=True, blank=True)
+    total_price = models.DecimalField(max_digits=10, decimal_places=0, default=0)
 
     def __str__(self):
         return f"Order #{self.id} - {self.get_payment_status_display()}"
@@ -94,11 +94,18 @@ class OrderItem(BaseModel):
     quantity = models.PositiveSmallIntegerField()
     unit_price = models.CharField(max_length=30)
 
-
+ 
 class Cart(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4)
     created_at = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='carts')
+    user = models.OneToOneField('users.User', on_delete=models.CASCADE, related_name='cart')
+
+    @classmethod
+    def get_cart_for_user(cls, user):
+        if hasattr(user, 'cart'):
+            return user.cart
+        return cls.objects.create(user=user)
+
 
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")  # rather thans cartitem_set
@@ -115,10 +122,11 @@ class CartItem(models.Model):
 
 
 class Address(BaseModel):
-    title = models.CharField(max_length=200)
-    pickup_location = models.CharField(max_length=255)
-    delivery_location = models.CharField(max_length=255)
+    title = models.CharField(max_length=200, null=True, blank=True)
+    longitude = models.CharField(max_length=255)
+    latitude = models.CharField(max_length=255)
     customer = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='address')
 
 
 class Comment(models.Model):
@@ -128,5 +136,4 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"{self.author}'s comment"
-
 

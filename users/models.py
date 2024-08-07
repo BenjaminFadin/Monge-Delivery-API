@@ -21,9 +21,9 @@ class User(models.Model):
     last_name = models.CharField(max_length=25, null=True)
     phone_number = models.CharField(max_length=12, blank=True, null=True)
     language = models.CharField(max_length=2, choices=LANGUAGE_CHOICE, null=True, blank=True)
-    birth_date = models.DateField() 
+    birth_date = models.DateField(null=True, blank=True)
     is_courier = models.BooleanField(default=False, null=True)
-
+    
     class Meta:
         verbose_name = 'Users'
         verbose_name_plural = 'User'

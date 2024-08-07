@@ -20,6 +20,14 @@ class CategorySerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Category
+        fields = ['id', 'title', 'logo']
+
+
+
+class SubCategorySerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = Category
         fields = ['id', 'parent', 'title', 'logo']
 
 
@@ -38,10 +46,12 @@ class ProductSerializer(serializers.ModelSerializer):
             'category'
         ]
 
+
 class PromotionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Promotion
         fields = ['created_at', 'title', 'content', 'picture', 'video', 'is_sent']
+
 
 class OrderItemSerializer(serializers.ModelSerializer):
     
@@ -56,14 +66,73 @@ class SimpleProductSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'unit_price']
 
 
+class OrderItemCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['id', 'order', 'product', 'quantity', 'unit_price']
+        read_only_fields = ('order',)
+
+
+class OrderAddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = ('longitude', 'latitude', 'customer', 'order')
+        extra_kwargs = {
+            'customer': {'required': False},
+            'order': {'required': False}
+        }
+
+
 class OrderSerializer(serializers.ModelSerializer):
-    recipient = SimpleUserSerializer()
-    items = OrderItemSerializer(many=True)
+    recipient_tg_id = serializers.IntegerField(write_only=True)
+    recipient_info = serializers.SerializerMethodField()
+    items = OrderItemCreateSerializer(many=True)
+    address = OrderAddressSerializer()
+
+    def get_recipient_info(self, obj: Order):
+        return SimpleUserSerializer(obj.recipient).data
 
     class Meta:
         model = Order
-        fields = ['id', 'placed_at', 'payment_status', 'recipient', 'items']
+        fields = [
+            'id', 'placed_at', 'payment_status', 'recipient',
+            'items', 'total_price', 'recipient_tg_id', 'recipient_info', 'address'
+        ]
+        read_only_fields = ('payment_status', 'total_price')
 
+    def create(self, validated_data):
+        address_info = validated_data.get('address')
+        if not address_info:
+            raise serializers.ValidationError({'address': 'This field is required'})
+        items = validated_data.get('items')
+        if not items:
+            raise serializers.ValidationError({'items': 'This field is required'})
+        recipient_tg_id = validated_data.get('recipient_tg_id')
+        if not recipient_tg_id:
+            raise serializers.ValidationError({'recipient_tg_id': 'This field is required'})
+        try:
+            user = User.objects.get(telegram_id=recipient_tg_id)
+        except User.DoesNotExist:
+            raise serializers.ValidationError({'recipient_tg_id': "Invalid"})
+        validated_data.pop('recipient_tg_id')
+        validated_data.pop('items')
+        validated_data.pop('address')
+        validated_data['recipient'] = user
+        order = super().create(validated_data)
+        address_info['customer'] = user.id
+        address_info['order'] = order.id
+        address_serializer = OrderAddressSerializer(data=address_info)
+        address_serializer.is_valid(raise_exception=True)
+        address_serializer.save()
+        for item in items:
+            item['order'] = order.id
+            item['product'] = item['product'].id
+        item_serializer = OrderItemSerializer(data=items, many=True)
+        item_serializer.is_valid(raise_exception=True)
+        item_serializer.save()
+        order.total_price = sum([item.quantity * item.product.unit_price for item in order.items.all()])
+        order.save()
+        return order
 
 
 class CartItemSerializer(serializers.ModelSerializer):
@@ -85,20 +154,19 @@ class AddressSerializer(serializers.ModelSerializer):
         fields = ['location', 'customer']
 
 
-
-
 class CartSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
     items = CartItemSerializer(many=True, read_only=True)
     total_price = serializers.SerializerMethodField()
     telegram_id = serializers.CharField(write_only=True)
+    user = SimpleUserSerializer(read_only=True)
 
     def get_total_price(self, cart):
         return sum([item.quantity * item.product.unit_price for item in cart.items.all()])
 
     class Meta:
         model = Cart
-        fields = ['id', 'telegram_id', 'items', 'total_price']
+        fields = ['id', 'telegram_id', 'items', 'total_price', 'user']
 
 
 class AddCartItemSerializer(serializers.ModelSerializer):
@@ -163,3 +231,4 @@ class CreateOrderSerializer(serializers.Serializer):
 
             Cart.objects.filter(pk=cart_id).delete()
             return order
+        

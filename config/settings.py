@@ -112,7 +112,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'OrderEcommerseDB',
         'USER': 'postgres',
-        'PASSWORD': 'fazliddin2002',
+        'PASSWORD': 'qweqwe123123',
         'HOST': 'localhost',
         'PORT': 5432
     }

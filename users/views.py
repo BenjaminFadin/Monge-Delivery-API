@@ -25,3 +25,4 @@ class UserViewSet(ModelViewSet):
 
         return obj
 1
+

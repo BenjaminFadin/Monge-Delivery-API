@@ -7,8 +7,10 @@ from rest_framework.filters import SearchFilter
 from rest_framework.decorators import action
 from .models import *
 from users.models import User
+from rest_framework import status
 from .serializers import (
-    CategorySerializer, 
+    CategorySerializer,
+    SubCategorySerializer,
     ProductSerializer,
     PromotionSerializer, 
     OrderSerializer, 
@@ -24,22 +26,33 @@ class CategoryParentViewSet(ModelViewSet):
     serializer_class = CategorySerializer
 
 class SubCategoryViewSet(ModelViewSet):
-    serializer_class = CategorySerializer
-        
+    # queryset = Category.objects.filter(parent__isnull=False)
+    serializer_class = SubCategorySerializer
+
     def get_queryset(self):
         parent_id = self.request.query_params.get('parent_id')
-        if parent_id:
-            return Category.objects.filter(parent__id=parent_id)
-        return Category.objects.none()  # Return an empty queryset if no parent_id is provided
+        if parent_id is not None:
+            return Category.objects.filter(parent_id=parent_id)
+        else:
+            return Category.objects.filter(parent__isnull=False)
 
-    @action(detail=False, methods=['get'])
-    def list_subcategories(self, request, *args, **kwargs):
-        parent_id = request.query_params.get('parent_id')
-        if not parent_id:
-            return Response({"detail": "parent_id query parameter is required."}, status=400)
+    def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)    # def get_queryset(self):
+    #     parent_id = self.request.query_params.get('parent_id')
+    #     if parent_id:
+    #         return Category.objects.filter(parent__id=parent_id)
+    #     return Category.objects.none()  # Return an empty queryset if no parent_id is provided
+
+    # @action(detail=False, methods=['get'])
+    # def list_subcategories(self, request, *args, **kwargs):
+    #     parent_id = request.query_params.get('parent_id')
+    #     if not parent_id:
+    #         return Response({"detail": "parent_id query parameter is required."}, status=400)
+    #     queryset = self.get_queryset()
+    #     serializer = self.get_serializer(queryset, many=True)
+    #     return Response(serializer.data)
 
 class ProductViewSet(ModelViewSet):
     queryset = Product.objects.all()
@@ -52,29 +65,29 @@ class PromotionViewSet(ModelViewSet):
     queryset = Promotion.objects.all()
     serializer_class = PromotionSerializer
 
+
 class OrderViewSet(ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
     # lookup_field = 'customer__id'
+
 
 class OrderItemViewSet(ModelViewSet):
     queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
 
 
-
-class CartViewSet(CreateModelMixin,
-                  RetrieveModelMixin,
-                  DestroyModelMixin,
-                  GenericViewSet):
+class CartViewSet(ModelViewSet):
     queryset = Cart.objects.prefetch_related('items__product').all()
-    serializer_class = CartSerializer 
+    serializer_class = CartSerializer
 
-    def perform_create(self, serializer):
+    def create(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
         telegram_id = serializer.validated_data.pop('telegram_id')
         user = User.objects.get(telegram_id=telegram_id)
-        serializer.save(user=user)
-
+        cart = Cart.get_cart_for_user(user=user)
+        return Response(self.serializer_class(cart).data)
 
 
 class CartItemViewSet(ModelViewSet):    
@@ -94,6 +107,5 @@ class CartItemViewSet(ModelViewSet):
         return CartItem.objects \
             .filter(cart_id=self.kwargs.get('cart_pk')) \
             .select_related('product')
-
 
 
